@@ -14,6 +14,8 @@ const getPreparedProducts = (
   userFilter,
   query,
   categoriesFilter,
+  sortField,
+  sortOrder,
 ) => {
   let preparedProducts = products.map(prod => {
     const category =
@@ -47,6 +49,35 @@ const getPreparedProducts = (
     });
   }
 
+  if (sortField && sortOrder) {
+    preparedProducts = [...preparedProducts].sort((prod1, prod2) => {
+      let result = 0;
+
+      switch (sortField) {
+        case 'ID':
+          result = prod1.id - prod2.id;
+          break;
+
+        case 'Product':
+          result = prod1.name.localeCompare(prod2.name);
+          break;
+
+        case 'Category':
+          result = prod1.category.title.localeCompare(prod2.category.title);
+          break;
+
+        case 'User':
+          result = prod1.user.name.localeCompare(prod2.user.name);
+          break;
+
+        default:
+          result = 0;
+      }
+
+      return sortOrder === 'asc' ? result : -result;
+    });
+  }
+
   return preparedProducts;
 };
 
@@ -56,6 +87,8 @@ export const App = () => {
   const [userFilter, setUserFilter] = useState({});
   const [query, setQuery] = useState('');
   const [categoriesFilter, setCategoriesFilter] = useState([]);
+  const [sortField, setSortField] = useState('');
+  const [sortOrder, setSortOrder] = useState('');
 
   const products = getPreparedProducts(
     productsFromServer,
@@ -64,6 +97,8 @@ export const App = () => {
     userFilter,
     query,
     categoriesFilter,
+    sortField,
+    sortOrder,
   );
 
   const reset = () => {
@@ -78,6 +113,22 @@ export const App = () => {
 
   const removeCategory = value => {
     setCategoriesFilter(prev => prev.filter(categ => categ !== value));
+  };
+
+  const handleSort = field => {
+    if (sortField === field) {
+      if (sortOrder === 'asc') {
+        setSortOrder('desc');
+      } else if (sortOrder === 'desc') {
+        setSortOrder('');
+        setSortField('');
+      } else {
+        setSortOrder('asc');
+      }
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
   };
 
   const isProductsEmpty = products.length === 0;
@@ -214,13 +265,24 @@ export const App = () => {
               <thead>
                 <tr>
                   {COLUMNS_TITLES.map(title => {
+                    const isSorted = sortField === title;
+                    const sortedUp = sortOrder === 'asc';
+                    const sortedDown = sortOrder === 'desc';
+
                     return (
                       <th key={title}>
                         <span className="is-flex is-flex-wrap-nowrap">
                           {title}
-                          <a href="#/">
+                          <a href="#/" onClick={() => handleSort(title)}>
                             <span className="icon">
-                              <i data-cy="SortIcon" className="fas fa-sort" />
+                              <i
+                                data-cy="SortIcon"
+                                className={cn('fas', {
+                                  'fa-sort': !isSorted,
+                                  'fa-sort-up': isSorted && sortedUp,
+                                  'fa-sort-down': isSorted && sortedDown,
+                                })}
+                              />
                             </span>
                           </a>
                         </span>
