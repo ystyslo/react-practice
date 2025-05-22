@@ -13,6 +13,7 @@ const getPreparedProducts = (
   categories,
   userFilter,
   query,
+  categoriesFilter,
 ) => {
   let preparedProducts = products.map(prod => {
     const category =
@@ -40,12 +41,21 @@ const getPreparedProducts = (
     });
   }
 
+  if (categoriesFilter.length !== 0) {
+    preparedProducts = preparedProducts.filter(product => {
+      return categoriesFilter.includes(product.category.title);
+    });
+  }
+
   return preparedProducts;
 };
+
+const COLUMNS_TITLES = ['ID', 'Product', 'Category', 'User'];
 
 export const App = () => {
   const [userFilter, setUserFilter] = useState({});
   const [query, setQuery] = useState('');
+  const [categoriesFilter, setCategoriesFilter] = useState([]);
 
   const products = getPreparedProducts(
     productsFromServer,
@@ -53,15 +63,27 @@ export const App = () => {
     categoriesFromServer,
     userFilter,
     query,
+    categoriesFilter,
   );
 
   const reset = () => {
     setQuery('');
     setUserFilter({});
+    setCategoriesFilter([]);
+  };
+
+  const addCategory = value => {
+    setCategoriesFilter(prev => [...prev, value]);
+  };
+
+  const removeCategory = value => {
+    setCategoriesFilter(prev => prev.filter(categ => categ !== value));
   };
 
   const isProductsEmpty = products.length === 0;
   const isQueryEmpty = query.length === 0;
+  const isCategoriesFilterEmpty = categoriesFilter.length === 0;
+  const isAnyFilters = userFilter.id || query || !isCategoriesFilterEmpty;
 
   return (
     <div className="section">
@@ -132,40 +154,45 @@ export const App = () => {
               <a
                 href="#/"
                 data-cy="AllCategories"
-                className="button is-success mr-6 is-outlined"
+                className={cn('button is-success mr-6 ', {
+                  'is-outlined': !isCategoriesFilterEmpty,
+                })}
+                onClick={() => setCategoriesFilter([])}
               >
                 All
               </a>
 
-              <a
-                data-cy="Category"
-                className="button mr-2 my-1 is-info"
-                href="#/"
-              >
-                Category 1
-              </a>
+              {categoriesFromServer.map(category => {
+                const isCategoryActive = categoriesFilter.includes(
+                  category.title,
+                );
 
-              <a data-cy="Category" className="button mr-2 my-1" href="#/">
-                Category 2
-              </a>
-
-              <a
-                data-cy="Category"
-                className="button mr-2 my-1 is-info"
-                href="#/"
-              >
-                Category 3
-              </a>
-              <a data-cy="Category" className="button mr-2 my-1" href="#/">
-                Category 4
-              </a>
+                return (
+                  <a
+                    data-cy="Category"
+                    className={cn('button mr-2 my-1 ', {
+                      'is-info': isCategoryActive,
+                    })}
+                    href="#/"
+                    onClick={
+                      isCategoryActive
+                        ? () => removeCategory(category.title)
+                        : () => addCategory(category.title)
+                    }
+                  >
+                    {category.title}
+                  </a>
+                );
+              })}
             </div>
 
             <div className="panel-block">
               <a
                 data-cy="ResetAllButton"
                 href="#/"
-                className="button is-link is-fullwidth is-outlined"
+                className={cn('button is-link is-fullwidth', {
+                  'is-outlined': !isAnyFilters,
+                })}
                 onClick={reset}
               >
                 Reset all filters
@@ -186,49 +213,20 @@ export const App = () => {
             >
               <thead>
                 <tr>
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      ID
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort" />
+                  {COLUMNS_TITLES.map(title => {
+                    return (
+                      <th key={title}>
+                        <span className="is-flex is-flex-wrap-nowrap">
+                          {title}
+                          <a href="#/">
+                            <span className="icon">
+                              <i data-cy="SortIcon" className="fas fa-sort" />
+                            </span>
+                          </a>
                         </span>
-                      </a>
-                    </span>
-                  </th>
-
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      Product
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort-down" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
-
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      Category
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort-up" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
-
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      User
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
 
