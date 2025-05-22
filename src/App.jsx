@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/accessible-emoji */
-import React from 'react';
+import React, { useState } from 'react';
 import './App.scss';
 import cn from 'classnames';
 
@@ -7,8 +7,8 @@ import usersFromServer from './api/users';
 import categoriesFromServer from './api/categories';
 import productsFromServer from './api/products';
 
-const getPreparedProducts = (products, users, categories) => {
-  const preparedProducts = products.map(prod => {
+const getPreparedProducts = (products, users, categories, userFilter) => {
+  let preparedProducts = products.map(prod => {
     const category =
       categories.find(categ => categ.id === prod.categoryId) || null;
     const user = users.find(us => us.id === category.ownerId) || null;
@@ -20,14 +20,23 @@ const getPreparedProducts = (products, users, categories) => {
     };
   });
 
+  if (userFilter.id) {
+    preparedProducts = preparedProducts.filter(
+      product => product.user.id === userFilter.id,
+    );
+  }
+
   return preparedProducts;
 };
 
 export const App = () => {
+  const [userFilter, setUserFilter] = useState({});
+
   const products = getPreparedProducts(
     productsFromServer,
     usersFromServer,
     categoriesFromServer,
+    userFilter,
   );
 
   return (
@@ -40,21 +49,30 @@ export const App = () => {
             <p className="panel-heading">Filters</p>
 
             <p className="panel-tabs has-text-weight-bold">
-              <a data-cy="FilterAllUsers" href="#/">
+              <a
+                data-cy="FilterAllUsers"
+                href="#/"
+                className={cn({ 'is-active': !userFilter.id })}
+                onClick={() => setUserFilter({})}
+              >
                 All
               </a>
 
-              <a data-cy="FilterUser" href="#/">
-                User 1
-              </a>
+              {usersFromServer.map(user => {
+                const userIsActive = userFilter.id === user.id;
 
-              <a data-cy="FilterUser" href="#/" className="is-active">
-                User 2
-              </a>
-
-              <a data-cy="FilterUser" href="#/">
-                User 3
-              </a>
+                return (
+                  <a
+                    data-cy="FilterUser"
+                    href="#/"
+                    className={cn({ 'is-active': userIsActive })}
+                    key={user.id}
+                    onClick={() => setUserFilter(user)}
+                  >
+                    {user.name}
+                  </a>
+                );
+              })}
             </p>
 
             <div className="panel-block">
