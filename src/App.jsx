@@ -7,7 +7,13 @@ import usersFromServer from './api/users';
 import categoriesFromServer from './api/categories';
 import productsFromServer from './api/products';
 
-const getPreparedProducts = (products, users, categories, userFilter) => {
+const getPreparedProducts = (
+  products,
+  users,
+  categories,
+  userFilter,
+  query,
+) => {
   let preparedProducts = products.map(prod => {
     const category =
       categories.find(categ => categ.id === prod.categoryId) || null;
@@ -26,18 +32,30 @@ const getPreparedProducts = (products, users, categories, userFilter) => {
     );
   }
 
+  if (query) {
+    const normalizedQuery = query.toLowerCase().trim();
+
+    preparedProducts = preparedProducts.filter(product => {
+      return product.name.toLowerCase().includes(normalizedQuery);
+    });
+  }
+
   return preparedProducts;
 };
 
 export const App = () => {
   const [userFilter, setUserFilter] = useState({});
+  const [query, setQuery] = useState('');
 
   const products = getPreparedProducts(
     productsFromServer,
     usersFromServer,
     categoriesFromServer,
     userFilter,
+    query,
   );
+
+  const isQueryEmpty = query.length === 0;
 
   return (
     <div className="section">
@@ -81,8 +99,9 @@ export const App = () => {
                   data-cy="SearchField"
                   type="text"
                   className="input"
-                  placeholder="Search"
-                  value="qwe"
+                  placeholder="!WARNING! entering value may cause re-render xD"
+                  value={query}
+                  onChange={event => setQuery(event.target.value.trimStart())}
                 />
 
                 <span className="icon is-left">
@@ -91,11 +110,14 @@ export const App = () => {
 
                 <span className="icon is-right">
                   {/* eslint-disable-next-line jsx-a11y/control-has-associated-label */}
-                  <button
-                    data-cy="ClearButton"
-                    type="button"
-                    className="delete"
-                  />
+                  {!isQueryEmpty && (
+                    <button
+                      data-cy="ClearButton"
+                      type="button"
+                      className="delete"
+                      onClick={() => setQuery('')}
+                    />
+                  )}
                 </span>
               </p>
             </div>
